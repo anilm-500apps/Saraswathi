@@ -249,26 +249,35 @@ body {
 
 </div>
 
-<!-- PIANO SECTION -->
+<!-- PIANO SECTION -->  
 <div class="piano-section">
-    <span style="font-size: 20px; color: black; font-family: Lucida Grande; font-weight: bold; text-align: left;">ఆరోహణ(Arohana). ====&#62;</span>
+    <span style="font-size: 20px; color: black; font-family: Lucida Grande; font-weight: bold; text-align: left;">ఆరోహణ(Arohana). ====&#62; <span id="arohanaTextS" class="raga-text"></span><button onclick="playSequence('Arohana')">▶ Play</button> </span>
     <div class="piano-wrapper">
         <div class="piano" id="pianoArohana"></div>
     </div>
     
-    <span style="font-size: 20px; color: black; font-family: Lucida Grande; font-weight: bold; text-align: left;">అవరోహణ(Avarohana). &#60;====</span>
+    <span style="font-size: 20px; color: black; font-family: Lucida Grande; font-weight: bold; text-align: left;">అవరోహణ(Avarohana). &#60;==== <span id="avarohanaTextS" class="raga-text"></span><button onclick="playSequence('Avarohana')">▶ Play</button></span>
 
    <div class="piano" id="pianoAvarohana"></div>
 
 </div>
+<div style="display: flex; justify-content: space-between;">
+    <div style="display: flex;"><button class="back-btn" onclick="goBack()">⬅ Back</button>
+    <button class="back-btn" onclick="audioCtx.resume()">Enable Sound</button>
+</div>
+    <div>
+        <div><button class="back-btn" onclick="openSongs()">Related songs ➔</button></div>
+    </div>
+    
+</div>
 
-<div><button class="back-btn" onclick="goBack()">⬅ Back</button></div>
 <script src="ragas.js"></script>
 
 <script>
 let lang = "te"
 let octaves = 3
 let sruthi = "C"
+
 /* GET RAGA NAME FROM URL */
 const params = new URLSearchParams(window.location.search);
 const ragaName = params.get("name");
@@ -276,6 +285,13 @@ const ragaName = params.get("name");
 /* FIND RAGA */
 const raga = carnatic_ragas.find(r => r.name === ragaName);
 
+// piano creation
+const WHITE_PER_OCT = 7;
+const BLACK_POS = [0, 1, 3, 4, 5];
+const WHITE_WIDTH = 50;
+const BLACK_WIDTH = 30;
+const sruthis = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const availableKeys = ["S","R1","R2","R3","G1","G2","G3","M1","M2","P","D1","D2","D3","N1","N2","N3","S*"];
 /* FILL DATA */
 if (raga) {
     document.getElementById("ragaName").textContent = raga.name;
@@ -283,22 +299,14 @@ if (raga) {
     document.getElementById("ragaNumber").textContent = raga.number ?? "-";
     document.getElementById("ragaChakra").textContent = raga.chakra ?? "-";
     document.getElementById("arohanaText").textContent = raga.Arohana.join(" ");
-    document.getElementById("avarohanaText").textContent = raga.Avarohana.join(" ");
+    // document.getElementById("avarohanaText").textContent = raga.Avarohana.join(" ");
+    document.getElementById("avarohanaText").textContent=[...raga.Avarohana].reverse().join(" ");
 }
 
 /* BACK */
 function goBack() {
     window.location.href = "index.html";
 }
-
-// piano creation
-const WHITE_PER_OCT = 7;
-const BLACK_POS = [0, 1, 3, 4, 5];
-const WHITE_WIDTH = 50;
-const BLACK_WIDTH = 30;
-
-const sruthis = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const availableKeys = ["S","R1","R2","R3","G1","G2","G3","M1","M2","P","D1","D2","D3","N1","N2","N3","S*"];
 
 function setOctave(pitch_type, oct, aro, selectedSruthi) {
     buildPiano(pitch_type, oct, aro , selectedSruthi);
@@ -343,8 +351,8 @@ function calculateArohanaIndexes(arohana, octaves, selectedSruthi) {
     return indexes;
 }
 
-
 function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
+    console.log(":::::::::::::::::::::::::::::", arohana)
     const telugu_sy={"S":"స", "R":"రి", "G":"గ", "M":"మ", "P":"ప", "D":"ద", "N":"ని"}
 
     const piano = document.getElementById(containerId);
@@ -375,7 +383,23 @@ function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
 
     let whiteIndex = 0;
     let globalKeyIndex = 1; // IMPORTANT: counts white + black
-
+    let new_steps = []
+    if (containerId === "pianoAvarohana") {
+            new_steps = [...arohana].reverse();
+        }else{
+            new_steps = arohana;
+        }
+    console.log(new_steps,"::::::::::::::", containerId,arohana)
+    if (lang === "te") {
+        raga_notes = []
+        for (let i = 0; i < new_steps.length; i++) {
+                const suffix = new_steps[i].slice(1);
+                raga_notes.push(telugu_sy[new_steps[i][0]] + suffix);
+            }
+        document.getElementById(containerId.replace("pianoA","a") + "TextS").textContent = raga_notes;
+    }else {
+        document.getElementById(containerId.replace("pianoA","a") + "TextS").textContent = new_steps;
+    }
     for (let o = 0; o < octaves; o++) {
         for (let w = 0; w < WHITE_PER_OCT; w++) {
 
@@ -396,15 +420,33 @@ function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
             } else {
                 white.textContent = note;
             }
-
-
-
                 white.style.fontWeight = "bold";
                 white.style.display = "flex";
                 white.style.alignItems = "center";
                 white.style.justifyContent = "center";
                 white.style.color = "red";
             }
+            // 🔊 SOUND FOR WHITE KEY
+            const whiteFreq = getFrequency(globalKeyIndex, octaves);
+
+            white.addEventListener("mousedown", () => {
+                audioCtx.resume();
+                activeKeys[globalKeyIndex] = playFreq(whiteFreq);
+            });
+
+            white.addEventListener("mouseup", () => {
+                if (activeKeys[globalKeyIndex]) {
+                    activeKeys[globalKeyIndex].stop();
+                    delete activeKeys[globalKeyIndex];
+                }
+            });
+
+            white.addEventListener("mouseleave", () => {
+                if (activeKeys[globalKeyIndex]) {
+                    activeKeys[globalKeyIndex].stop();
+                    delete activeKeys[globalKeyIndex];
+                }
+            });
 
             piano.appendChild(white);
             globalKeyIndex++;
@@ -439,6 +481,28 @@ function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
                     black.style.border = "1px solid black"
                 }
 
+                // 🔊 SOUND FOR BLACK KEY
+                const blackFreq = getFrequency(globalKeyIndex, octaves);
+
+                black.addEventListener("mousedown", () => {
+                    audioCtx.resume();
+                    activeKeys[globalKeyIndex] = playFreq(blackFreq);
+                });
+
+                black.addEventListener("mouseup", () => {
+                    if (activeKeys[globalKeyIndex]) {
+                        activeKeys[globalKeyIndex].stop();
+                        delete activeKeys[globalKeyIndex];
+                    }
+                });
+
+                black.addEventListener("mouseleave", () => {
+                    if (activeKeys[globalKeyIndex]) {
+                        activeKeys[globalKeyIndex].stop();
+                        delete activeKeys[globalKeyIndex];
+                    }
+                });
+
                 piano.appendChild(black);
                 globalKeyIndex++;
             }
@@ -448,10 +512,8 @@ function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
     }
 }
 
-setOctave("pianoArohana", 3 , aro=raga.Arohana);
-setOctave("pianoAvarohana", 3 , aro=raga.Avarohana)
-
 function selectSruthi(button, newSruthi) {
+
     sruthi = newSruthi
     // 🔴 remove active from all buttons
     document.querySelectorAll('.sruthi-btn').forEach(btn => {
@@ -520,6 +582,151 @@ function selectlang(button, newlang) {
         raga.Avarohana
     );
 }
+function openSongs() {
+    window.location.href = `songs.html?name=${encodeURIComponent(raga.name)}`;
+}
+
+function getOctaveMultipliers(octaves) {
+    if (octaves === 3) return [0.5, 1, 2];
+    if (octaves === 5) return [0.25, 0.5, 1, 2, 4];
+    return [1];
+}
+
+function getFrequency(globalKeyIndex, octaves) {
+    const BASE_FREQ = [
+        261.63, 277.18, 293.66, 311.13,
+        329.63, 349.23, 369.99,
+        392.00, 415.30, 440.00,
+        466.16, 493.88
+    ];
+
+    const octaveMultipliers = getOctaveMultipliers(octaves);
+
+    const keysPerOctave = 12;
+
+    const zeroBased = globalKeyIndex - 1;
+    const octaveIndex = Math.floor(zeroBased / keysPerOctave);
+    const noteIndex = zeroBased % keysPerOctave;
+
+    return BASE_FREQ[noteIndex] * octaveMultipliers[octaveIndex];
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const activeKeys = {};
+
+const BASE_FREQ = [
+    261.63, 277.18, 293.66, 311.13,
+    329.63, 349.23, 369.99,
+    392.00, 415.30, 440.00,
+    466.16, 493.88
+];
+const swaraFreq = {
+  "S": 261.63,
+  "R1": 277.18,
+  "R2": 293.66,
+  "G2": 311.13,
+  "G3": 329.63,
+  "M1": 349.23,
+  "M2": 369.99,
+  "P": 392.00,
+  "D1": 415.30,
+  "D2": 440.00,
+  "N2": 466.16,
+  "N3": 493.88,
+  "S'": 523.25   // upper Sa (optional)
+};
+
+
+function getOctaveMultipliers(octaves) {
+    if (octaves === 3) return [0.5, 1, 2];
+    if (octaves === 5) return [0.25, 0.5, 1, 2, 4];
+    return [1];
+}
+
+function getFrequency(globalKeyIndex, octaves) {
+    const multipliers = getOctaveMultipliers(octaves);
+    const zeroIndex = globalKeyIndex - 1;
+
+    const octaveIndex = Math.floor(zeroIndex / 12);
+    const noteIndex = zeroIndex % 12;
+
+    return BASE_FREQ[noteIndex] * multipliers[octaveIndex];
+}
+
+// function playFreq(freq) {
+//     const osc = audioCtx.createOscillator();
+//     osc.type = "sine";
+//     osc.frequency.value = freq;
+//     osc.connect(audioCtx.destination);
+//     osc.start();
+//     return osc;
+// }
+
+function playFreq(freq, duration = 0) {
+    if (duration === 0){
+        const osc = audioCtx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        osc.connect(audioCtx.destination);
+        osc.start();
+        return osc;
+    }
+    else {
+        // duration === 2000
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = freq;
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + duration / 1000
+        );
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration / 1000);
+    }
+}
+
+function playSequence(sequence) {
+    let time = 0;
+    let count = 0;
+    const duration = 1000; // 2 seconds
+    if (sequence=== "Arohana"){
+        new_seq = raga.Arohana
+    } else {
+        new_seq = [...raga.Avarohana].reverse()
+    }
+    new_seq.forEach(swara => {
+        let freq = swaraFreq[swara];
+        if (!freq) return;
+        if (sequence==="Arohana" & swara === "S"){
+            count+=1
+            if (count>1){
+                freq=freq * 2
+            }
+        } else if(sequence === "Avarohana" & swara === "S") {
+            if (count < 1){
+                freq=freq * 2
+            }count+=1
+        }
+        setTimeout(() => {
+            playFreq(freq, duration);
+        }, time);
+
+        time += duration;
+    });
+}
+
+
+
+setOctave("pianoArohana", 3 , aro=raga.Arohana);
+setOctave("pianoAvarohana", 3 , aro=raga.Avarohana)
 
 </script>
 
