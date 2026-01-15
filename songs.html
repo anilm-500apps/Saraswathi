@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Raga Songs</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+h1 { text-align: center; }
+ul { list-style-type: none; padding: 0; }
+li { background: #fff; margin: 10px 0; padding: 10px; border-radius: 6px; }
+.back-btn { padding: 8px 16px; font-size: 14px; cursor: pointer; background-color: aqua; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<button class="back-btn" onclick="goBack()">⬅ Back</button>
+
+<h1 id="ragaName">Raga Songs</h1>
+<ul id="songList"></ul>
+
+<button onclick="audioCtx.resume()" >Enable Sound</button>
+
+
+<script src="songs.js"></script>
+<script>
+function goBack() {
+    window.history.back();
+}
+
+const params = new URLSearchParams(window.location.search);
+const ragaName = params.get("name");
+document.getElementById("ragaName").textContent = ragaName + " Songs";
+
+const songs = raga_songs[ragaName] || [];
+const list = document.getElementById("songList");
+
+if (songs.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No songs available for this raga.";
+    list.appendChild(li);
+} else {
+    songs.forEach(song => {
+        const li = document.createElement("li");
+        li.textContent = song;
+        list.appendChild(li);
+    });
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const activeKeys = {}; // track pressed keys
+
+function playFreq(freq) {
+    const osc = audioCtx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    osc.connect(audioCtx.destination);
+    osc.start();
+    return osc;
+}
+
+const keyToFreq = {
+    "a": 261.63,
+    "w": 277.18,
+    "s": 293.66,
+    "e": 311.13,
+    "d": 329.63,
+    "f": 349.23,
+    "t": 369.99,
+    "g": 392.00,
+    "y": 415.30,
+    "h": 440.00,
+    "u": 466.16,
+    "j": 493.88,
+        "k": 523.26,
+    "o": 277.18*2,
+    "l": 293.66*2,
+    "p": 311.13*2,
+    ";": 329.63*2,
+    "[": 349.23*2,
+    "'": 369.99*2,
+    "]": 392.00*2
+};
+
+document.addEventListener("keydown", (e) => {
+    const key = e.key.toLowerCase();
+
+    if (!keyToFreq[key]) return;
+
+    // 🚫 Ignore key repeat
+    if (activeKeys[key]) return;
+
+    activeKeys[key] = playFreq(keyToFreq[key]);
+});
+
+document.addEventListener("keyup", (e) => {
+    const key = e.key.toLowerCase();
+
+    if (activeKeys[key]) {
+        activeKeys[key].stop();
+        delete activeKeys[key];
+    }
+});
+
+
+
+</script>
+</body>
+</html>
