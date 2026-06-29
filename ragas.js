@@ -1710,6 +1710,14 @@ const carnatic_ragas = [
         "chakra": "Bana",
         "Arohana": ["S","R2","M1","P","D2","S"],
         "Avarohana": ["S","R2","G3","M1","P","D2","N2","S"],
-        "parent": "Harikambhoji"}
-        
+        "parent": "Harikambhoji"},
+        {
+        "name": "paadi or padi",
+        "te_name": "",
+        "type": "Janya",
+        "number": 181,
+        "chakra": "Agni",
+        "Arohana": ["S","R1","M1","P","N3","S"],
+        "Avarohana": ["S","R1","M1","P","D1","P","N3","S"],
+        "parent": "Mayamalavagowla"}
 ]
