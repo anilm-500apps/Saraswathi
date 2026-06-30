@@ -60,6 +60,10 @@ body {
     padding: 0px;
     border-radius: 6px;
 }
+.swara-section h4 {
+    margin: 0;
+    padding: 2px;
+}
 
 /* PIANO */
 .piano-section {
@@ -170,6 +174,87 @@ body {
     color: #fff;
 }
 
+.recent-bar {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 5px;
+    background: white;
+    margin-top: 5px;
+}
+
+.recent-chip {
+    position: relative;
+    padding: 10px 26px 10px 12px;
+    background: #dff7ff;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    font-size: 11px;
+    color: red;
+    font-weight: bold;
+    cursor: pointer;
+}
+/* floating search bar */
+#floatingSearch {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+#searchBtn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    background: #00e5ff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+#searchPopup {
+    margin-top: 10px;
+    width: 270px;
+    background: white;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+#searchPopup input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+#floatingResults {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#floatingResults li {
+    padding: 8px;
+    cursor: pointer;
+}
+
+#floatingResults li:hover {
+    background: #eee;
+}
+
+.hidden {
+    display: none;
+}
 
 </style>
 </head>
@@ -196,13 +281,13 @@ body {
 <!-- AROHANA / AVAROHANA TEXT -->
 <div class="swara-section">
     <div>
-        <h3>ఆరోహణ(Arohana) : <span id="arohanaText"></span></h3>
+        <h4>ఆరోహణ(Arohana) : <span id="arohanaText"></span></h3>
     </div>
     <div>
-        <h3>అవరోహణ(Avarohana) : <span id="avarohanaText"></span></h3>
+        <h4>అవరోహణ(Avarohana) : <span id="avarohanaText"></span></h3>
     </div>
 </div>
-
+<div id="recentBar" class="recent-bar"></div>
 <div style="text-align:center; margin-top:10px;display: flex; justify-content: space-between;">
     <div id="octaveButtons" style="display: flex; justify-content: center;">
         <p style="font-weight: bold;">స్థాయి/Octave ➔</p>
@@ -271,6 +356,15 @@ body {
     
 </div>
 
+<div id="floatingSearch">
+    <button id="searchBtn">🔍</button>
+
+    <div id="searchPopup" class="hidden">
+        <input type="text" id="floatingInput" placeholder="Search raga...">
+        <ul id="floatingResults"></ul>
+    </div>
+</div>
+
 <script src="ragas.js"></script>
 
 <script>
@@ -281,6 +375,80 @@ let sruthi = "C"
 /* GET RAGA NAME FROM URL */
 const params = new URLSearchParams(window.location.search);
 const ragaName = params.get("name");
+renderUsedRagas();
+
+const btn = document.getElementById("searchBtn");
+const popup = document.getElementById("searchPopup");
+
+btn.onclick = () => {
+    popup.classList.toggle("hidden");
+};
+const input = document.getElementById("floatingInput");
+const results = document.getElementById("floatingResults");
+
+function saveUsedRaga(name) {
+    let ragas = JSON.parse(localStorage.getItem("usedRagas")) || [];
+
+    let existing = ragas.find(r => r.name === name);
+
+    if (existing) {
+        existing.count++;
+    } else {
+        ragas.push({ name, count: 1 });
+    }
+
+    ragas.sort((a, b) => b.count - a.count);
+
+    localStorage.setItem("usedRagas", JSON.stringify(ragas));
+}
+
+input.addEventListener("input", () => {
+    const query = input.value.toLowerCase();
+    results.innerHTML = "";
+
+    const filtered = carnatic_ragas.filter(r =>
+        r.name.toLowerCase().includes(query)
+    );
+
+    filtered.forEach(raga => {
+        const li = document.createElement("li");
+        li.textContent = raga.name;
+
+        li.onclick = () => {
+            saveUsedRaga(raga.name)
+            window.location.href =
+                `raga.html?name=${encodeURIComponent(raga.name)}`;
+        };
+
+        results.appendChild(li);
+    });
+});
+
+// dragable to any where
+const floating = document.getElementById("floatingSearch");
+
+let dragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+floating.addEventListener("mousedown", (e) => {
+    dragging = true;
+    offsetX = e.clientX - floating.offsetLeft;
+    offsetY = e.clientY - floating.offsetTop;
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+
+    floating.style.left = (e.clientX - offsetX) + "px";
+    floating.style.top = (e.clientY - offsetY) + "px";
+    floating.style.right = "auto";
+});
+
+document.addEventListener("mouseup", () => {
+    dragging = false;
+});
+//  dragable code end
 
 /* FIND RAGA */
 const raga = carnatic_ragas.find(r => r.name === ragaName);
@@ -301,6 +469,47 @@ if (raga) {
     document.getElementById("arohanaText").textContent = raga.Arohana.join(" ");
     // document.getElementById("avarohanaText").textContent = raga.Avarohana.join(" ");
     document.getElementById("avarohanaText").textContent=[...raga.Avarohana].reverse().join(" ");
+}
+
+function deleteRaga(name) {
+    let ragas = JSON.parse(localStorage.getItem("usedRagas")) || [];
+
+    ragas = ragas.filter(r => r.name !== name);
+
+    localStorage.setItem("usedRagas", JSON.stringify(ragas));
+
+    renderUsedRagas();
+}
+
+function renderUsedRagas() {
+    const bar = document.getElementById("recentBar");
+    let ragas = JSON.parse(localStorage.getItem("usedRagas")) || [];
+
+    bar.innerHTML = "";
+
+    ragas.forEach(raga => {
+        const chip = document.createElement("div");
+        chip.className = "recent-chip";
+
+        chip.innerHTML = `
+            <span>${raga.name}</span>
+            <span class="delete-btn">✖</span>
+        `;
+
+        chip.onclick = () => {
+            window.location.href =
+                `raga.html?name=${encodeURIComponent(raga.name)}`;
+        };
+
+        const del = chip.querySelector(".delete-btn");
+
+        del.onclick = (e) => {
+            e.stopPropagation(); // don't open raga
+            deleteRaga(raga.name);
+        };
+
+        bar.appendChild(chip);
+    });
 }
 
 /* BACK */
@@ -352,7 +561,6 @@ function calculateArohanaIndexes(arohana, octaves, selectedSruthi) {
 }
 
 function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
-    console.log(":::::::::::::::::::::::::::::", arohana)
     const telugu_sy={"S":"స", "R":"రి", "G":"గ", "M":"మ", "P":"ప", "D":"ద", "N":"ని"}
 
     const piano = document.getElementById(containerId);
@@ -389,7 +597,6 @@ function buildPiano(containerId, octaves, arohana, selectedSruthi = "C") {
         }else{
             new_steps = arohana;
         }
-    console.log(new_steps,"::::::::::::::", containerId,arohana)
     if (lang === "te") {
         raga_notes = []
         for (let i = 0; i < new_steps.length; i++) {
@@ -652,15 +859,6 @@ function getFrequency(globalKeyIndex, octaves) {
 
     return BASE_FREQ[noteIndex] * multipliers[octaveIndex];
 }
-
-// function playFreq(freq) {
-//     const osc = audioCtx.createOscillator();
-//     osc.type = "sine";
-//     osc.frequency.value = freq;
-//     osc.connect(audioCtx.destination);
-//     osc.start();
-//     return osc;
-// }
 
 function playFreq(freq, duration = 0) {
     if (duration === 0){
