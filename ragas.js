@@ -793,7 +793,7 @@ const carnatic_ragas = [
         "Avarohana" : ["S", "R1", "M1", "P", "N2", "S"],
         "parent": "Ratnangi" },
         {
-        "name": "Hindolam",
+        "name": "Hindolam or malkosh",
         "te_name" : "",
         "type": "Janya",
         "number": 79,
